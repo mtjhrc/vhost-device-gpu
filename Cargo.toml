@@ -1,0 +1,3 @@
+[workspace]
+members = ["vhost-device-gpu", "rutabaga_gfx"]
+resolver = "2"
