@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 or BSD-3-Clause
 
 mod backend;
-mod worker;
+//mod worker;
 mod descriptor_utils;
 mod file_traits;
 mod virtio_gpu;

@@ -4,15 +4,16 @@ use crossbeam_channel::unbounded;
 use log::warn;
 use vhost::vhost_user::VhostUserProtocolFeatures;
 use vhost::vhost_user::VhostUserVirtioFeatures;
-use vhost_user_backend::{VhostUserBackendMut, VringRwLock};
+use vhost_user_backend::{VhostUserBackendMut, VringRwLock, VringT};
 use virtio_bindings::virtio_config::VIRTIO_F_VERSION_1;
 use virtio_bindings::virtio_gpu::{
     VIRTIO_GPU_F_CONTEXT_INIT, VIRTIO_GPU_F_RESOURCE_BLOB, VIRTIO_GPU_F_VIRGL,
 };
-use vm_memory::{GuestMemoryAtomic, GuestMemoryMmap};
+use vm_memory::{Bytes, GuestAddress, GuestAddressSpace, GuestMemory, GuestMemoryAtomic, GuestMemoryMmap};
 use vmm_sys_util::epoll::EventSet;
+use crate::virtio_gpu::VirtioGpu;
 
-const EVENT_ID_CONTROLQ: u16 = 0;
+const CONTROLQ_ID: u16 = 0;
 const EVENT_ID_CURSORQ: u16 = 1;
 
 #[derive(Clone)]
@@ -25,7 +26,8 @@ pub struct VirtioShmRegion {
 pub struct GpuBackend {
     event_idx: bool,
     mem: Option<GuestMemoryAtomic<GuestMemoryMmap>>,
-    shm_region: Option<VirtioShmRegion>,
+    // TODO: we cannot have this here because VirtioGpu is not Send
+    //gpu: Arc<Mutex<Option<VirtioGpu>>>,
 }
 
 impl GpuBackend {
@@ -33,7 +35,7 @@ impl GpuBackend {
         GpuBackend {
             event_idx: false,
             mem: None,
-            shm_region: None,
+           // gpu: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -73,21 +75,8 @@ impl VhostUserBackendMut for GpuBackend {
         if self.mem.is_some() {
             panic!("Changed memory after starting not supported!");
         }
+
         self.mem = Some(mem);
-        /*
-        let (sender, receiver) = unbounded();
-        let worker = Worker::new(
-            receiver,
-            mem.clone(),
-            self.queue_ctl.clone(),
-            self.interrupt_status.clone(),
-            self.interrupt_evt.try_clone().unwrap(),
-            self.intc.clone(),
-            self.irq_line,
-            shm_region,
-        );
-        worker.run();
-        */
 
         Ok(())
     }
@@ -100,14 +89,27 @@ impl VhostUserBackendMut for GpuBackend {
         thread_id: usize,
     ) -> std::io::Result<()> {
         assert_eq!(thread_id, 0);
+        let Some(ref mem) = self.mem else {
+            log::error!("Cannot handle_event: we don't have shared memory!");
+            return Ok(())
+        };
+
+        /*
+        let Some(ref gpu) = self.gpu.lock() else {
+            //FIXME: what is the shm_region
+            let gpu = VirtioGpu::new(vrings[CONTROLQ_ID].clone());
+            self.gpu = Arc::new(Mutex::new(Some(gpu)));
+
+            self.gpu.lock().as_mut().unwrap()
+        };*/
 
         match device_event {
-            EVENT_ID_CONTROLQ => {
+            CONTROLQ_ID => {
 
             },
-            EVENT_ID_CURSORQ => {
-
-            },
+            CURSORQ_ID => {
+                log::trace!("Ignoring CURSORQ: not implemented");
+            }
             device_event => {
                 log::warn!("unhandled device_event: {}", device_event);
                 panic!("TODO error");
