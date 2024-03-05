@@ -20,16 +20,16 @@ libc = "0.2"
 log = "0.4"
 rutabaga_gfx = { path = "rutabaga_gfx", features = ["virgl_renderer"]}
 thiserror = "1.0"
-vhost = { version = "0.9", features = ["vhost-user-backend"] }
-vhost-user-backend = "0.11"
-virtio-bindings = "0.2.2"
-virtio-queue = "0.10"
-vm-memory = "0.13.1"
-vmm-sys-util = "0.11"
+vhost = { path = "vendor/vhost", features = ["vhost-user-backend"] }
+vhost-user-backend = {path = "vendor/vhost-user-backend"}
+virtio-bindings = {path = "vendor/virtio-bindings"}
+virtio-queue = {path = "vendor/virtio-queue"}
+vm-memory = {path = "vendor/vm-memory"}
+vmm-sys-util = {path = "vendor/vmm-sys-util"}
 zerocopy = "0.6.3"
 zerocopy-derive = "0.6.3"
 
 [dev-dependencies]
 assert_matches = "1.5"
-virtio-queue = { version = "0.10", features = ["test-utils"] }
-vm-memory = { version = "0.13.1", features = ["backend-mmap", "backend-atomic"] }
+virtio-queue = { path = "vendor/virtio-queue", features = ["test-utils"] }
+vm-memory = { path = "vendor/vm-memory", features = ["backend-mmap", "backend-atomic"] }
