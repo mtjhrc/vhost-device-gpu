@@ -26,6 +26,7 @@ use rutabaga_gfx::{
     ResourceCreate3D, ResourceCreateBlob, RutabagaFence, Transfer3D,
     RUTABAGA_PIPE_BIND_RENDER_TARGET, RUTABAGA_PIPE_TEXTURE_2D,
 };
+use virtio_bindings::virtio_config::{VIRTIO_F_ANY_LAYOUT, VIRTIO_F_RING_RESET};
 use crate::{
     GpuConfig,
     virtio_gpu::*,
@@ -558,13 +559,22 @@ impl VhostUserBackendMut for VhostUserGpuBackend {
     fn features(&self) -> u64 {
         debug!("Features called");
         1 << VIRTIO_F_VERSION_1
+            // QEMU imaginary flags:
+            | 1 << VIRTIO_F_ANY_LAYOUT // 27
+            | 1 << 28 // ????
+            | 1 << 29 // ????
+            | 1 << VIRTIO_F_RING_RESET // 40
+
+            // REAL FLAGS:
             | 1 << VIRTIO_F_NOTIFY_ON_EMPTY
             | 1 << VIRTIO_RING_F_INDIRECT_DESC
             | 1 << VIRTIO_RING_F_EVENT_IDX
             | 1 << VIRTIO_GPU_F_VIRGL
             | 1 << VIRTIO_GPU_F_EDID
-            | 1 << VIRTIO_GPU_F_RESOURCE_BLOB
-            | 1 << VIRTIO_GPU_F_CONTEXT_INIT
+
+            // QEMU doesn't provide these or if it does, it doesn't acknowledge them:
+            // | 1 << VIRTIO_GPU_F_RESOURCE_BLOB
+            // | 1 << VIRTIO_GPU_F_CONTEXT_INIT
 
             | VhostUserVirtioFeatures::PROTOCOL_FEATURES.bits()
     }
