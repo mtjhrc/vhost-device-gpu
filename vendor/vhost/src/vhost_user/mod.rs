@@ -24,7 +24,7 @@ use std::io::Error as IOError;
 pub mod message;
 pub use self::message::{VhostUserProtocolFeatures, VhostUserVirtioFeatures};
 
-mod connection;
+pub mod connection;
 pub use self::connection::Listener;
 
 #[cfg(feature = "vhost-user-frontend")]
