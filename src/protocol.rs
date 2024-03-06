@@ -8,7 +8,6 @@
 use std::cmp::min;
 use std::convert::From;
 use std::fmt::Display;
-use std::io::Write;
 use std::marker::PhantomData;
 use std::mem::{size_of, size_of_val};
 use std::str::from_utf8;

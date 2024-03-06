@@ -8,6 +8,7 @@ mod shm;
 pub mod sys;
 
 pub use descriptor::AsRawDescriptor;
+#[allow(unused)]
 pub use descriptor::AsRawDescriptors;
 pub use descriptor::FromRawDescriptor;
 pub use descriptor::IntoRawDescriptor;

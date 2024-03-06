@@ -7,13 +7,13 @@
 use log::{debug, info, warn, error};
 use std::{
     convert,
-    io::{self, Result as IoResult, Read, Write},
+    io::{self, Result as IoResult},
 };
 
 use thiserror::Error as ThisError;
 use vhost::vhost_user::message::{VhostUserProtocolFeatures, VhostUserVirtioFeatures};
 use vhost_user_backend::{VhostUserBackendMut, VringRwLock, VringT};
-use virtio_bindings::{bindings::virtio_config::{VIRTIO_F_NOTIFY_ON_EMPTY, VIRTIO_F_VERSION_1}, virtio_gpu::{VIRTIO_GPU_F_CONTEXT_INIT, VIRTIO_GPU_F_RESOURCE_BLOB}};
+use virtio_bindings::{bindings::virtio_config::{VIRTIO_F_NOTIFY_ON_EMPTY, VIRTIO_F_VERSION_1}};
 use virtio_bindings::bindings::virtio_ring::{
     VIRTIO_RING_F_EVENT_IDX, VIRTIO_RING_F_INDIRECT_DESC,
 };
@@ -23,18 +23,17 @@ use vmm_sys_util::epoll::EventSet;
 use vmm_sys_util::eventfd::{EventFd, EFD_NONBLOCK};
 
 use rutabaga_gfx::{
-    ResourceCreate3D, ResourceCreateBlob, RutabagaFence, Transfer3D,
+    ResourceCreate3D, RutabagaFence, Transfer3D,
     RUTABAGA_PIPE_BIND_RENDER_TARGET, RUTABAGA_PIPE_TEXTURE_2D,
 };
 use virtio_bindings::virtio_config::{VIRTIO_F_ANY_LAYOUT, VIRTIO_F_RING_RESET};
 use crate::{
     GpuConfig,
     virtio_gpu::*,
-    virtio_gpu::GpuCommandType,
     //VirtioShmRegion,
 };
 use super::protocol::{
-    virtio_gpu_ctrl_hdr, virtio_gpu_mem_entry, GpuCommand, GpuResponse, VirtioGpuResult,
+    virtio_gpu_ctrl_hdr, GpuCommand, GpuResponse, VirtioGpuResult,
 };
 use crate::protocol::{VIRTIO_GPU_FLAG_FENCE, VIRTIO_GPU_FLAG_INFO_RING_IDX};
 use super::virt_gpu::{

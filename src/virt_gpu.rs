@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::env;
 use std::os::fd::AsRawFd;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use libc::c_void;
@@ -15,7 +14,7 @@ use rutabaga_gfx::{
     RUTABAGA_MAP_ACCESS_WRITE, RUTABAGA_MAP_CACHE_MASK, RUTABAGA_MEM_HANDLE_TYPE_OPAQUE_FD,
 };
 //use utils::eventfd::EventFd;
-use vhost_user_backend::{VhostUserBackendMut, VringRwLock, VringT};
+use vhost_user_backend::{VringRwLock, VringT};
 use vm_memory::{GuestAddress, GuestMemory, GuestMemoryMmap, VolatileSlice};
 
 //use super::super::Queue as VirtQueue;
