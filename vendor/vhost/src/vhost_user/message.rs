@@ -235,7 +235,7 @@ bitflags! {
 /// machine native byte order.
 #[repr(packed)]
 #[derive(Copy)]
-pub(super) struct VhostUserMsgHeader<R: Req> {
+pub struct VhostUserMsgHeader<R: Req> {
     request: u32,
     flags: u32,
     size: u32,
