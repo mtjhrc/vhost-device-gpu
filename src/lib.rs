@@ -2,6 +2,7 @@ pub mod virtio_gpu;
 pub mod virt_gpu;
 pub mod vhu_gpu;
 pub mod protocol;
+pub mod gpu_frontend_connection;
 #[cfg(test)]
 mod rutabaga_tests;
 

@@ -7,6 +7,7 @@ pub mod vhu_gpu;
 pub mod virtio_gpu;
 pub mod protocol;
 pub mod virt_gpu;
+pub mod gpu_frontend_connection;
 
 use log::{error, info};
 use std::path::PathBuf;

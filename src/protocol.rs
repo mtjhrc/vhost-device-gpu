@@ -16,6 +16,7 @@ use std::{fmt, io};
 use rutabaga_gfx::RutabagaError;
 use zerocopy::{AsBytes, FromBytes};
 use thiserror::Error;
+use vhost::vhost_user::message::VhostUserMsgValidator;
 use vm_memory::{ByteValued, Bytes, GuestAddress, GuestMemoryMmap};
 use crate::vhu_gpu::{self, Error};
 
@@ -284,6 +285,9 @@ pub struct virtio_gpu_resp_display_info {
     pub pmodes: [virtio_gpu_display_one; VIRTIO_GPU_MAX_SCANOUTS],
 }
 unsafe impl ByteValued for virtio_gpu_resp_display_info {}
+
+// TODO: maybe do some checks?
+impl VhostUserMsgValidator for virtio_gpu_resp_display_info {}
 
 /* data passed in the control vq, 3d related */
 

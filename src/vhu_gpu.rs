@@ -12,7 +12,7 @@ use std::{
 use std::os::unix::net::UnixStream;
 
 use thiserror::Error as ThisError;
-use vhost::vhost_user::message::{VhostUserProtocolFeatures, VhostUserVirtioFeatures};
+use vhost::vhost_user::message::{FrontendReq, VhostUserProtocolFeatures, VhostUserVirtioFeatures};
 use vhost_user_backend::{VhostUserBackendMut, VringRwLock, VringT};
 use virtio_bindings::{bindings::virtio_config::{VIRTIO_F_NOTIFY_ON_EMPTY, VIRTIO_F_VERSION_1}};
 use virtio_bindings::bindings::virtio_ring::{
@@ -28,16 +28,20 @@ use rutabaga_gfx::{
     RUTABAGA_PIPE_BIND_RENDER_TARGET, RUTABAGA_PIPE_TEXTURE_2D,
 };
 use vhost::vhost_user::Backend;
+use vhost::vhost_user::connection::Endpoint;
 use virtio_bindings::virtio_config::{VIRTIO_F_ANY_LAYOUT, VIRTIO_F_RING_RESET};
+
 use crate::{
     GpuConfig,
     virtio_gpu::*,
     //VirtioShmRegion,
 };
+use crate::gpu_frontend_connection::GpuFrontendConnection;
 use super::protocol::{
     virtio_gpu_ctrl_hdr, GpuCommand, GpuResponse, VirtioGpuResult,
 };
 use crate::protocol::{VIRTIO_GPU_FLAG_FENCE, VIRTIO_GPU_FLAG_INFO_RING_IDX};
+use crate::protocol::GpuResponse::OkDisplayInfo;
 use super::virt_gpu::{
     VirtioGpu,
     VirtioGpuRing,
@@ -87,6 +91,7 @@ pub(crate) struct VhostUserGpuBackend {
     pub exit_event: EventFd,
     mem: Option<GuestMemoryAtomic<GuestMemoryMmap>>,
     shm_region: Option<VirtioShmRegion>,
+    gpu_frontend_conn: Option<GpuFrontendConnection>,
 }
 
 type GpuDescriptorChain = DescriptorChain<GuestMemoryLoadGuard<GuestMemoryMmap<()>>>;
@@ -105,6 +110,7 @@ impl VhostUserGpuBackend {
             exit_event: EventFd::new(EFD_NONBLOCK).map_err(|_| Error::EventFdFailed)?,
             mem: None,
             shm_region: None,
+            gpu_frontend_conn: None
         })
     }
 
@@ -125,7 +131,10 @@ impl VhostUserGpuBackend {
         virtio_gpu.force_ctx_0();
         match cmd {
             GpuCommand::GetDisplayInfo(_) => {
-                panic!("virtio_gpu: GpuCommand::GetDisplayInfo unimplemented");
+                log::debug!("Get display info called");
+                Ok(GpuResponse::OkDisplayInfo(
+                    self.gpu_frontend_conn.as_mut().unwrap().get_display_info()
+                ))
             }
             GpuCommand::ResourceCreate2d(info) => {
                 let resource_id = info.resource_id;
@@ -536,7 +545,6 @@ impl VhostUserGpuBackend {
     }
 
     fn process_cursor_queue(&self, _vring: &VringRwLock) -> IoResult<()> {
-        debug!("Init ok!");
         debug!("process_cusor_q");
         Ok(())
     }
@@ -682,6 +690,7 @@ impl VhostUserBackendMut for VhostUserGpuBackend {
 
     fn set_gpu_socket(&mut self, stream: UnixStream) {
         log::debug!("set_gpu_socket: {stream:?}");
+        self.gpu_frontend_conn = Some(GpuFrontendConnection::from_stream(stream));
     }
 }
 
