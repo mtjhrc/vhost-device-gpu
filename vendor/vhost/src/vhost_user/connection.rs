@@ -459,6 +459,7 @@ impl<R: Req> Endpoint<R> {
         } else if bytes != mem::size_of::<VhostUserMsgHeader<R>>() {
             return Err(Error::PartialMessage);
         } else if !hdr.is_valid() {
+            println!("[MY] recv_header invalid!");
             return Err(Error::InvalidMessage);
         }
 

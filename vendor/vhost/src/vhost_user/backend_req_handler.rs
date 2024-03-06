@@ -326,6 +326,7 @@ impl<S: VhostUserBackendReqHandler> BackendReqHandler<S> {
         //   message header
         // . validate message body and optional payload
         let (hdr, files) = self.main_sock.recv_header()?;
+        println!("[MY] handle_request: {hdr:?} {:?}", hdr.get_code());
         self.check_attached_files(&hdr, &files)?;
 
         let (size, buf) = match hdr.get_size() {
@@ -361,6 +362,7 @@ impl<S: VhostUserBackendReqHandler> BackendReqHandler<S> {
             Ok(FrontendReq::SET_FEATURES) => {
                 let msg = self.extract_request_body::<VhostUserU64>(&hdr, size, &buf)?;
                 let res = self.backend.set_features(msg.value);
+                println!("[MY] set_features returned: {res:?}");
                 self.acked_virtio_features = msg.value;
                 self.update_reply_ack_flag();
                 self.send_ack_message(&hdr, res)?;
@@ -492,6 +494,17 @@ impl<S: VhostUserBackendReqHandler> BackendReqHandler<S> {
                 let msg = self.extract_request_body::<VhostUserInflight>(&hdr, size, &buf)?;
                 let res = self.backend.set_inflight_fd(&msg, file);
                 self.send_ack_message(&hdr, res)?;
+            },
+            Ok(FrontendReq::GPU_SET_SOCKET) => {
+                /* let mut files = files.ok_or(Error::InvalidParam)?;
+                if files.len() != 1 {
+                    return Err(Error::InvalidParam);
+                } */
+                // let stream = UnixStream::from(files[0].into());
+                // self.backend.gpu_set_socket();
+                println!("[MY] Got GPU_SET_SOCKET, but we cannot handle it! {files:?}");
+                mem::forget(files.unwrap()[0].try_clone().unwrap());
+                self.send_ack_message(&hdr, Ok(()))?;
             }
             Ok(FrontendReq::GET_MAX_MEM_SLOTS) => {
                 self.check_proto_feature(VhostUserProtocolFeatures::CONFIGURE_MEM_SLOTS)?;
@@ -711,9 +724,13 @@ impl<S: VhostUserBackendReqHandler> BackendReqHandler<S> {
                 | FrontendReq::SET_LOG_FD
                 | FrontendReq::SET_BACKEND_REQ_FD
                 | FrontendReq::SET_INFLIGHT_FD
-                | FrontendReq::ADD_MEM_REG,
+                | FrontendReq::ADD_MEM_REG
+                | FrontendReq::GPU_SET_SOCKET
             ) => Ok(()),
-            _ if files.is_some() => Err(Error::InvalidMessage),
+            _ if files.is_some() => {
+                println!("[MY] check_attached_files failed: {hdr:?}");
+                Err(Error::InvalidMessage)
+            },
             _ => Ok(()),
         }
     }
@@ -767,13 +784,13 @@ impl<S: VhostUserBackendReqHandler> BackendReqHandler<S> {
         res: Result<()>,
     ) -> Result<()> {
         if self.reply_ack_enabled && req.is_need_reply() {
-            let hdr = self.new_reply_header::<VhostUserU64>(req, 0)?;
+            let hdr = self.new_reply_header::<VhostUserU64>(req, 0).expect("new_reply_header failed");
             let val = match res {
                 Ok(_) => 0,
                 Err(_) => 1,
             };
             let msg = VhostUserU64::new(val);
-            self.main_sock.send_message(&hdr, &msg, None)?;
+            self.main_sock.send_message(&hdr, &msg, None).expect("send_message failed");
         }
         res
     }

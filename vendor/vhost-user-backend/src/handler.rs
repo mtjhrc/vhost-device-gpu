@@ -240,6 +240,7 @@ where
     }
 
     fn set_features(&mut self, features: u64) -> VhostUserResult<()> {
+        println!("[MY] Expecting features: {:b}, got: {:b}", self.backend.features(), features);
         if (features & !self.backend.features()) != 0 {
             return Err(VhostUserError::InvalidParam);
         }
