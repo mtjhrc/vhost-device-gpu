@@ -65,6 +65,7 @@ pub trait VhostUserBackendReqHandler {
     fn get_config(&self, offset: u32, size: u32, flags: VhostUserConfigFlags) -> Result<Vec<u8>>;
     fn set_config(&self, offset: u32, buf: &[u8], flags: VhostUserConfigFlags) -> Result<()>;
     fn set_backend_req_fd(&self, _backend: Backend) {}
+    fn set_gpu_socket(&self, stream: UnixStream) {}
     fn get_inflight_fd(&self, inflight: &VhostUserInflight) -> Result<(VhostUserInflight, File)>;
     fn set_inflight_fd(&self, inflight: &VhostUserInflight, file: File) -> Result<()>;
     fn get_max_mem_slots(&self) -> Result<u64>;
@@ -110,6 +111,7 @@ pub trait VhostUserBackendReqHandlerMut {
     ) -> Result<Vec<u8>>;
     fn set_config(&mut self, offset: u32, buf: &[u8], flags: VhostUserConfigFlags) -> Result<()>;
     fn set_backend_req_fd(&mut self, _backend: Backend) {}
+    fn set_gpu_socket(&mut self, stream: UnixStream);
     fn get_inflight_fd(
         &mut self,
         inflight: &VhostUserInflight,
@@ -205,6 +207,10 @@ impl<T: VhostUserBackendReqHandlerMut> VhostUserBackendReqHandler for Mutex<T> {
 
     fn set_backend_req_fd(&self, backend: Backend) {
         self.lock().unwrap().set_backend_req_fd(backend)
+    }
+
+    fn set_gpu_socket(&self, stream: UnixStream) {
+        self.lock().unwrap().set_gpu_socket(stream);
     }
 
     fn get_inflight_fd(&self, inflight: &VhostUserInflight) -> Result<(VhostUserInflight, File)> {
@@ -496,14 +502,14 @@ impl<S: VhostUserBackendReqHandler> BackendReqHandler<S> {
                 self.send_ack_message(&hdr, res)?;
             },
             Ok(FrontendReq::GPU_SET_SOCKET) => {
-                /* let mut files = files.ok_or(Error::InvalidParam)?;
-                if files.len() != 1 {
-                    return Err(Error::InvalidParam);
-                } */
-                // let stream = UnixStream::from(files[0].into());
-                // self.backend.gpu_set_socket();
-                println!("[MY] Got GPU_SET_SOCKET, but we cannot handle it! {files:?}");
-                mem::forget(files.unwrap()[0].try_clone().unwrap());
+                let file = take_single_file(files).ok_or(Error::InvalidMessage)?;
+                // SAFETY: Safe because we have ownership of the files that were
+                // checked when received. We have to trust that they are Unix sockets
+                // since we have no way to check this. If not, it will fail later.
+                let stream = unsafe { UnixStream::from_raw_fd(file.into_raw_fd()) };
+                self.backend.set_gpu_socket(stream);
+
+                println!("TODO GPU_SET_SOCKET");
                 self.send_ack_message(&hdr, Ok(()))?;
             }
             Ok(FrontendReq::GET_MAX_MEM_SLOTS) => {

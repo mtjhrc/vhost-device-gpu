@@ -9,6 +9,7 @@ use std::{
     convert,
     io::{self, Result as IoResult},
 };
+use std::os::unix::net::UnixStream;
 
 use thiserror::Error as ThisError;
 use vhost::vhost_user::message::{VhostUserProtocolFeatures, VhostUserVirtioFeatures};
@@ -26,6 +27,7 @@ use rutabaga_gfx::{
     ResourceCreate3D, RutabagaFence, Transfer3D,
     RUTABAGA_PIPE_BIND_RENDER_TARGET, RUTABAGA_PIPE_TEXTURE_2D,
 };
+use vhost::vhost_user::Backend;
 use virtio_bindings::virtio_config::{VIRTIO_F_ANY_LAYOUT, VIRTIO_F_RING_RESET};
 use crate::{
     GpuConfig,
@@ -676,6 +678,10 @@ impl VhostUserBackendMut for VhostUserGpuBackend {
 
     fn exit_event(&self, _thread_index: usize) -> Option<EventFd> {
         self.exit_event.try_clone().ok()
+    }
+
+    fn set_gpu_socket(&mut self, stream: UnixStream) {
+        log::debug!("set_gpu_socket: {stream:?}");
     }
 }
 
