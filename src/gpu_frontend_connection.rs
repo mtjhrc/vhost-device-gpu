@@ -80,9 +80,8 @@ impl GpuFrontendConnection {
         let response: virtio_gpu_resp_display_info = response;
         assert_eq!(hdr.get_code().expect("TODO get code failed"), VhostGpuReq::GET_DISPLAY_INFO);
 
-
         let displays = response.pmodes.iter().map(|display|
-            (display.r.width, display.r.width, display.enabled == 1)
+            (display.r.width, display.r.height, display.enabled == 1)
         ).collect();
         dbg!(displays)
     }

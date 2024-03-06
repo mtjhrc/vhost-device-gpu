@@ -498,7 +498,9 @@ impl<R: Req> Endpoint<R> {
         let total = mem::size_of::<VhostUserMsgHeader<R>>() + mem::size_of::<T>();
         if bytes != total {
             return Err(Error::PartialMessage);
-        } else if !hdr.is_valid() || !body.is_valid() {
+        } else if
+            // FIXME: commented out a check validing the header, because gpu headers are different :(
+        /*dbg!(!hdr.is_valid()) ||*/ !body.is_valid() {
             return Err(Error::InvalidMessage);
         }
 
